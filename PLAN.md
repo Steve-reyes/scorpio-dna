@@ -58,12 +58,63 @@ User → Browser Upload (.txt/.zip) → FastAPI Parse → Pandas Match → Repor
 - PDF download of full report
 - disclaimer banner: "For educational purposes only — not medical advice"
 
-## UI Design (iOS HIG)
-- frosted glass sidebar → category navigation
-- pill button tabs per category
-- condition cards with SF Pro font, iOS system colors
-- risk meter with gradient (#34C759 → #FF9500 → #FF3B30)
-- scorpion logo + faded watermark (same as leadscraper theme)
+## UI Design (GenomeLink-inspired)
+
+### Layout
+- clean white/light background, dark header bar with scorpion logo
+- no sidebar — full-width layout, trait categories as horizontal icon bars
+- each trait is a card with a custom SVG icon at top-left, name, and result
+- results shown as colored badges (green = typical, amber = elevated, red = risk)
+
+### Trait Icons (custom SVG illustrations per condition)
+
+| Category | Icon Examples |
+|----------|-------------|
+| **Wellness & Health** | heart ❤️‍🩹, brain 🧠, liver, lungs, bones, skin 🧴, joints |
+| **Nutrition** | coffee ☕, milk bottle 🥛, vitamin pill 💊, fork 🍴, sun ☀️ |
+| **Sports & Fitness** | running figure 🏃, weight 💪, heart rate, lung capacity |
+| **Personality** | brain waves, eye 👁️, ear 👂, speech bubbles 💬 |
+| **Physical Traits** | eye color palette 🎨, hair strand 💇‍♂️, earwax, muscle fiber |
+| **Drug Response** | pill 💊, syringe 💉, liver metabolism, bleeding 🩸 |
+
+Each icon is a colored SVG illustration (~48x48px), one per condition — matching GenomeLink's illustration style. Icons are flat, friendly, single-color with accent backgrounds.
+
+### Card Design
+- white rounded card with subtle shadow
+- SVG icon in a colored circle (left side)
+- condition name + short description
+- risk badge: green dot "Typical" / yellow "Elevated" / red "Higher Risk"
+- small "Learn more" link → modal with study details
+
+### Category Headers
+- large icon + category name at top
+- color-coded pill header (e.g. Health = red, Nutrition = orange, Sports = blue)
+- count badge showing how many traits found in your DNA
+
+### Risk Meter (within each card)
+- horizontal bar: green → yellow → red gradient
+- marker showing where your result lands
+- population average shown as a grey dot for comparison
+
+### Color Palette
+- backgrounds: white, light gray (#F5F5F7)
+- accents per category: Health #FF3B30, Nutrition #FF9500, Sports #34C759, Personality #007AFF, Physical #AF52DE, Drug Response #FF2D55
+- text: dark (#1D1D1F) on white, gray (#86868B) for secondary
+- scorpion accent (#5856D6) for logo + key UI elements
+
+### Pages
+1. **Upload page** — drag-and-drop DNA file, file type badges (23andMe, AncestryDNA, MyHeritage), privacy disclaimer
+2. **Analysis page** — loading animation showing progress through categories
+3. **Report dashboard** — category tiles (icon + name + count), click to expand
+4. **Category detail** — grid of condition cards with icons
+5. **Condition detail** — full breakdown of a single trait with study links
+6. **PDF report** — downloadable full report with all categories
+
+### Icons Implementation
+- custom SVG components for each trait (inline SVGs, no external deps)
+- organized as `/frontend/src/icons/traits/` — one file per trait
+- fallback: auto-generated gradient icon with first letter of trait name
+- category icons in `/frontend/src/icons/categories/`
 
 ## File Structure
 ```
@@ -125,9 +176,11 @@ scorpio-dna/
 - [ ] test with real raw DNA file
 
 ### Phase 2 — Web UI
-- [ ] React/Vite frontend with iOS HIG theme
+- [ ] React/Vite frontend with GenomeLink-inspired design
+- [ ] custom SVG icons for each trait/condition
 - [ ] file upload UI with drag-and-drop
-- [ ] category tabs + condition cards
+- [ ] category tiles with icon + count
+- [ ] condition cards with risk badges
 - [ ] risk meter visualization
 - [ ] scorpion branding
 
