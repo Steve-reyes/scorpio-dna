@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 libpangocairo-1.0-0 \
-    libffi-dev shared-mime-info \
+    libffi-dev shared-mime-info unzip \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -15,8 +15,14 @@ COPY *.py ./
 COPY routes/ ./routes/
 COPY templates/ ./templates/
 
+# Seed core database at build time (117 health + 34 ancestry)
 RUN python data/seed_db.py
+RUN python data/seed_haplogroups.py
+
+# Include GWAS data for startup seeding into persistent volume
+COPY gwas-associations.zip /app/gwas-associations.zip
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run startup seed on first container start, then start server
+CMD ["sh", "-c", "python /app/startup_seed.py && uvicorn main:app --host 0.0.0.0 --port 8000"]

@@ -10,13 +10,12 @@ def match_snps(df: pd.DataFrame) -> list:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Get all reference SNPs
     cursor.execute("SELECT * FROM reference_snps")
     columns = [desc[0] for desc in cursor.description]
     ref_rows = cursor.fetchall()
     conn.close()
 
-    # Build lookup: rsid -> list of conditions
+    # Build rsid lookup
     ref_by_rsid = {}
     for row in ref_rows:
         r = dict(zip(columns, row))
@@ -25,33 +24,33 @@ def match_snps(df: pd.DataFrame) -> list:
             ref_by_rsid[rsid] = []
         ref_by_rsid[rsid].append(r)
 
-    # Create lookup from user's data
+    # User data lookups
     user_snp_map = dict(zip(df['rsid'], df['genotype']))
 
     results = []
     matched_rsids = set()
+    seen_matches = set()
 
     for rsid, conditions in ref_by_rsid.items():
         if rsid not in user_snp_map:
             continue
 
         user_genotype = user_snp_map[rsid].upper()
-        matched_rsids.add(rsid)
-
         for condition in conditions:
+            match_key = (rsid, condition['trait'])
+            if match_key in seen_matches:
+                continue
+            seen_matches.add(match_key)
+            matched_rsids.add(rsid)
+
             risk_geno = condition['risk_genotype'].upper()
             risk_allele = condition['risk_allele'].upper()
 
-            # Determine if user has the risk genotype
-            # Handle I/D notation — compare character sets
-            user_alleles = set(user_genotype)
-            risk_set = set(risk_geno)
-
+            # Determine match
             is_match = False
             result = "typical"
             note = condition['note'] or ""
 
-            # For deletion markers (I/D), check if any allele matches
             if 'D' in risk_geno or 'I' in risk_geno:
                 if user_genotype == risk_geno:
                     is_match = True
@@ -59,33 +58,32 @@ def match_snps(df: pd.DataFrame) -> list:
             elif '?' in user_genotype or len(user_genotype) < 2:
                 continue
             else:
-                # Standard biallelic comparison
                 if user_genotype == risk_geno:
                     is_match = True
                     result = condition['risk_level']
                 elif risk_allele and risk_allele in user_genotype:
-                    # Carries at least one risk allele — elevated
                     is_match = True
                     result = "elevated"
                 else:
                     is_match = True
                     result = "typical"
 
-            # Determine status text
             if is_match:
                 geno_display = f"{user_genotype}"
                 status_text = {
                     "high": "Higher Risk",
                     "elevated": "Elevated",
                     "typical": "Typical",
-                    "carrier": "Carrier"
+                    "carrier": "Carrier",
+                    "defining": "Detected",
                 }.get(result, "Typical")
 
                 color = {
                     "high": "red",
                     "elevated": "amber",
                     "typical": "green",
-                    "carrier": "blue"
+                    "carrier": "blue",
+                    "defining": "purple",
                 }.get(result, "gray")
 
                 results.append({
@@ -93,6 +91,10 @@ def match_snps(df: pd.DataFrame) -> list:
                     "category": condition['category'],
                     "trait": condition['trait'],
                     "description": condition['description'],
+                    "summary": condition['summary'],
+                    "health_tips": condition.get('health_tips', ''),
+                    "risk_factors": condition.get('risk_factors', ''),
+                    "if_untreated": condition.get('if_untreated', ''),
                     "genotype": geno_display,
                     "risk_allele": risk_allele,
                     "risk_genotype": risk_geno,
@@ -105,6 +107,7 @@ def match_snps(df: pd.DataFrame) -> list:
                 })
 
     return results
+
 
 def get_report_summary(results: list) -> dict:
     """Build summary report by category."""

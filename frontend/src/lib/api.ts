@@ -11,6 +11,10 @@ export interface ReportResult {
   category: string;
   trait: string;
   description: string;
+  summary: string;
+  health_tips: string;
+  risk_factors: string;
+  if_untreated: string;
   genotype: string;
   risk_allele: string;
   risk_genotype: string;
@@ -35,6 +39,7 @@ export interface UploadResponse {
   report: ReportSummary;
   total_snps: number;
   matched_snps: number;
+  admixture: Record<string, number> | null;
 }
 
 export async function uploadDna(file: File, password: string): Promise<UploadResponse> {
@@ -82,6 +87,8 @@ export function getCategoryColor(cat: string): string {
     'Nutrition': '#FF9500',
     'Fitness': '#34C759',
     'Personality': '#5856D6',
+    'Ancestry': '#8E8E93',
+    'Ethnicity': '#00BFA5',
   };
   return colors[cat] || '#86868B';
 }
@@ -95,6 +102,8 @@ export function getCategoryEmoji(cat: string): string {
     'Nutrition': '🥗',
     'Fitness': '🏃',
     'Personality': '🎭',
+    'Ancestry': '🗺️',
+    'Ethnicity': '🌍',
   };
   return icons[cat] || '📋';
 }
@@ -108,6 +117,8 @@ export function getCategoryDescription(cat: string): string {
     'Nutrition': 'How your genes affect nutrient metabolism and diet response',
     'Fitness': 'Athletic potential, recovery, injury risk',
     'Personality': 'Behavioral traits, mood regulation, taste perception',
+    'Ancestry': 'Maternal (mtDNA) and paternal (Y-DNA) lineage markers',
+    'Ethnicity': 'Autosomal admixture estimate based on 50+ ancestry-informative markers',
   };
   return descs[cat] || '';
 }

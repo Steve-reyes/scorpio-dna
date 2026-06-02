@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from parser import parse_dna_file, validate_dna
 from matcher import match_snps, get_report_summary
+from admixture import compute_admixture
 
 router = APIRouter()
 UPLOAD_DIR = "/tmp/scorpio-dna-uploads"
@@ -40,6 +41,30 @@ async def upload_dna(file: UploadFile = File(...)):
     results = match_snps(df)
     summary = get_report_summary(results)
 
+    # Save user rsids for AIM analysis (check which common AIMs exist)
+    user_rsids = set(df['rsid'].tolist())
+    from admixture import AIM_MARKERS as aim_check
+    found_aims = [r for r in aim_check if r in user_rsids]
+    print(f"[AIM-DEBUG] User has {len(found_aims)}/{len(aim_check)} AIM rsIDs: {found_aims}", flush=True)
+
+    # Also check top 50 reference DB rsids as potential AIMs
+    import sqlite3
+    conn = sqlite3.connect('/app/data/scorpio_dna.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT rsid FROM reference_snps")
+    ref_rsids = set(r[0] for r in cursor.fetchall())
+    conn.close()
+    common_rsids = ref_rsids & user_rsids
+    print(f"[AIM-DEBUG] User has {len(common_rsids)}/{len(ref_rsids)} reference DB rsids", flush=True)
+    # Sample some
+    sample = list(common_rsids)[:20]
+    print(f"[AIM-DEBUG] Sample common rsids: {sample}", flush=True)
+
+    # Compute admixture
+    print("[Admixture] Starting admixture computation...", flush=True)
+    admixture = compute_admixture(df)
+    print(f"[Admixture] Result: {admixture}", flush=True)
+
     # Clean up uploaded file
     os.remove(save_path)
 
@@ -47,7 +72,10 @@ async def upload_dna(file: UploadFile = File(...)):
         "session_id": session_id,
         "filename": file.filename,
         "validation": validation,
-        "report": summary
+        "report": summary,
+        "admixture": admixture,
+        "total_snps": validation.get("total_snps", len(df)),
+        "matched_snps": summary["total_matched"],
     })
 
 @router.post("/upload-with-password")

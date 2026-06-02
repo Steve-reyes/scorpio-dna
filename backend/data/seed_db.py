@@ -271,7 +271,10 @@ def seed_database():
             risk_level TEXT,
             population_freq REAL,
             study_url TEXT,
-            note TEXT
+            note TEXT,
+            summary TEXT,
+            risk_factors TEXT,
+            health_tips TEXT
         )
     """)
     c.execute("CREATE INDEX idx_rsid ON reference_snps(rsid)")
@@ -279,8 +282,8 @@ def seed_database():
 
     for snp in CURATED_SNPS:
         c.execute("""
-            INSERT INTO reference_snps (rsid, category, trait, description, risk_allele, risk_genotype, risk_level, population_freq, study_url, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO reference_snps (rsid, category, trait, description, risk_allele, risk_genotype, risk_level, population_freq, study_url, note, summary, health_tips, risk_factors)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', '')
         """, (snp[0], snp[1], snp[2], snp[3], snp[4], snp[5], snp[6], snp[7], snp[8], snp[9]))
 
     conn.commit()
